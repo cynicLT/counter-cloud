@@ -1,0 +1,15 @@
+zuul:
+  ignoredServices: '*'
+  host:
+    connect-timeout-millis: 60000
+    socket-timeout-millis: 60000
+  routes:
+    api:
+      path: /api/service/**
+      serviceId: counter-api
+
+spring:
+  http:
+    multipart:
+      maxFileSize: 10971520
+      maxRequestSize: 20971520

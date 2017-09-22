@@ -1,0 +1,4 @@
+count:
+  task:
+    batch.size: 10
+    word.separator: " "

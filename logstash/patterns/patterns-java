@@ -1,0 +1,3 @@
+LOG_METADATA %{DATA}%{USERNAME}%{SPACE}%{USERNAME:container_name}/%{USERNAME:container_id}\[%{NUMBER}]\:%{SPACE}
+LOG_ENTRY_START %{LOG_METADATA}%{SPACE}%{DATA}%{SPACE}%{TIMESTAMP_ISO8601:application_timestamp}
+LOG_LINE_CORRECT %{LOG_ENTRY_START}%{SPACE}%{USERNAME:application_level}%{DATA}%{NUMBER}%{SPACE}---%{SPACE}\[%{SPACE}%{USERNAME:application_thread}%{SPACE}\]%{SPACE}%{DATA:application_class}%{SPACE}:%{SPACE}%{GREEDYDATA:application_message}

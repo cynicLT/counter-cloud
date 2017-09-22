@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: gateway
+  cloud:
+    config:
+      discovery:
+        serviceId: ${CONFIGURATION_SERVICE_NAME}
+        enabled: true
+      username: ${CONFIGURATION_SERVICE_USERNAME}
+      password: ${CONFIGURATION_SERVICE_PASSWORD}
+  zipkin:
+    baseUrl: ${ZIPKIN_BASE_URL}
+  sleuth:
+    sampler:
+      percentage: ${ZIPKIN_SAMPLING}
+
+eureka:
+  client:
+    registerWithEureka: false
+    serviceUrl:
+      defaultZone: ${REGISTRY_SERVICE_ZONE}
+  instance:
+      prefer-ip-address: true
+      leaseRenewalIntervalInSeconds: 1
+      leaseExpirationDurationInSeconds: 2

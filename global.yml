@@ -1,0 +1,197 @@
+version: '2.1'
+services:
+# Logging
+  logstash:
+    mem_limit: 512m
+    restart: always
+    build: ./logstash/
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - counter-cloud-network
+    ports:
+      - "5000/udp:5000/udp"
+    environment:
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+    logging:
+      driver: none
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:5.2.1
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - xpack.security.enabled=false
+    mem_limit: 1024m
+    restart: always
+    ports:
+      - "8080:5601"
+    networks:
+      - counter-cloud-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    logging:
+      driver: none
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.2.1
+    restart: always
+    networks:
+      - counter-cloud-network
+    environment:
+      - xpack.security.enabled=false
+    logging:
+      driver: none
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:9200"]
+        interval: 30s
+        timeout: 10s
+
+#Trace
+  zipkin:
+    image: openzipkin/zipkin
+    mem_limit: 512m
+    restart: always
+    networks:
+      - counter-cloud-network
+    ports:
+      - "8090:9411"
+    logging:
+      driver: none
+
+# Eureka
+  registry:
+    mem_limit: 1024m
+    restart: always
+    build: ./registry/
+    ports:
+      - "8100:8080"
+    networks:
+      - counter-cloud-network
+    environment:
+      - REGISTRY_SERVICE_ZONE=http://registry:8080/eureka/
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://127.0.0.1:5000"
+        tag: "{{.Name}}/{{.ID}}"
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080"]
+        interval: 30s
+        timeout: 10s
+
+# Configuration service
+  configuration:
+    mem_limit: 1024m
+    restart: always
+    build: ./configuration/
+    networks:
+      - counter-cloud-network
+    depends_on:
+      registry:
+        condition: service_healthy
+    environment:
+      - REGISTRY_SERVICE_ZONE=http://registry:8080/eureka/
+      - CONFIGURATION_SERVICE_USERNAME=config
+      - CONFIGURATION_SERVICE_PASSWORD=config123
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://127.0.0.1:5000"
+        tag: "{{.Name}}/{{.ID}}"
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8888/health"]
+        interval: 60s
+        timeout: 10s
+
+# Zuul
+  gateway:
+    build: ./gateway/
+    mem_limit: 1024m
+    restart: always
+    ports:
+      - "80:8080"
+    environment:
+      - REGISTRY_SERVICE_ZONE=http://registry:8080/eureka/
+      - CONFIGURATION_SERVICE_USERNAME=config
+      - CONFIGURATION_SERVICE_PASSWORD=config123
+      - CONFIGURATION_SERVICE_NAME=configuration
+      - ZIPKIN_SAMPLING=1.0
+      - ZIPKIN_BASE_URL=http://zipkin:9411
+    networks:
+      - counter-cloud-network
+    depends_on:
+      registry:
+        condition: service_healthy
+      configuration:
+        condition: service_healthy
+      counter-api:
+        condition: service_healthy
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://127.0.0.1:5000"
+        tag: "{{.Name}}/{{.ID}}"
+
+# Application
+  counter-api:
+    build: ./counter-api/
+    restart: always
+    mem_limit: 1024m
+    environment:
+      - REGISTRY_SERVICE_ZONE=http://registry:8080/eureka/
+      - CONFIGURATION_SERVICE_USERNAME=config
+      - CONFIGURATION_SERVICE_PASSWORD=config123
+      - CONFIGURATION_SERVICE_NAME=configuration
+      - ZIPKIN_SAMPLING=1.0
+      - ZIPKIN_BASE_URL=http://zipkin:9411
+    networks:
+      - counter-cloud-network
+    depends_on:
+      registry:
+        condition: service_healthy
+      configuration:
+        condition: service_healthy
+      counter-service:
+        condition: service_healthy
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://127.0.0.1:5000"
+        tag: "{{.Name}}/{{.ID}}"
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+        interval: 30s
+        timeout: 10s
+
+  counter-service:
+    build: ./counter-service/
+    mem_limit: 1024m
+    restart: always
+    environment:
+      - REGISTRY_SERVICE_ZONE=http://registry:8080/eureka/
+      - CONFIGURATION_SERVICE_USERNAME=config
+      - CONFIGURATION_SERVICE_PASSWORD=config123
+      - CONFIGURATION_SERVICE_NAME=configuration
+      - ZIPKIN_SAMPLING=1.0
+      - ZIPKIN_BASE_URL=http://zipkin:9411
+    networks:
+      - counter-cloud-network
+    depends_on:
+      registry:
+        condition: service_healthy
+      configuration:
+        condition: service_healthy
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://127.0.0.1:5000"
+        tag: "{{.Name}}/{{.ID}}"
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+        interval: 30s
+        timeout: 10s
+
+networks:
+    counter-cloud-network:
