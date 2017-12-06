@@ -6,9 +6,7 @@ import org.cynic.exception.CounterApiException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.AbstractMap;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -18,7 +16,6 @@ public final class ZipHelper {
 
     private ZipHelper() {
     }
-
 
     public static byte[] zipRangeStatistics(List<RangeStatistics> rangeStatistics) {
         try {
@@ -33,12 +30,12 @@ public final class ZipHelper {
                                 zipOutputStream.putNextEntry(new ZipEntry(entry.getKey()));
                                 zipOutputStream.write(entry.getValue());
                                 zipOutputStream.closeEntry();
-                                zipOutputStream.finish();
                             } catch (IOException e) {
                                 throw new CounterApiException("error.create.zip").withCause(e);
                             }
                         });
 
+                zipOutputStream.finish();
                 zipOutputStream.flush();
                 return result.toByteArray();
             }
@@ -48,7 +45,7 @@ public final class ZipHelper {
     }
 
     private static byte[] toBytes(RangeStatistics rangeStatistic) {
-        return org.apache.tomcat.util.codec.binary.StringUtils.getBytesUtf8(
+        return org.apache.commons.codec.binary.StringUtils.getBytesUtf8(
                 rangeStatistic.
                         getWords().
                         entrySet().
