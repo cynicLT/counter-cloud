@@ -33,10 +33,13 @@ public final class ZipHelper {
                                 zipOutputStream.putNextEntry(new ZipEntry(entry.getKey()));
                                 zipOutputStream.write(entry.getValue());
                                 zipOutputStream.closeEntry();
+                                zipOutputStream.finish();
                             } catch (IOException e) {
                                 throw new CounterApiException("error.create.zip").withCause(e);
                             }
                         });
+
+                zipOutputStream.flush();
                 return result.toByteArray();
             }
         } catch (IOException e) {
