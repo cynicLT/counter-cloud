@@ -1,9 +1,6 @@
-set M2_HOME=%M2_HOME%
-set JAVA_HOME=%JAVA_8_HOME%
-
 @echo off
 docker-machine rm counter-hub -f
-docker-machine create -d virtualbox --virtualbox-memory "8192" --virtualbox-cpu-count "3" counter-hub
+docker-machine create -d virtualbox --virtualbox-memory "10240" --virtualbox-cpu-count "4" counter-hub
 
 docker-machine ip counter-hub > IP
 SET /p HUB= < IP
